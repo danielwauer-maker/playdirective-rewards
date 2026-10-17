@@ -6,7 +6,8 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import Base, SessionLocal, engine
-from app.routes import auth, billing, offers, referrals
+from app import research_models  # noqa: F401 - registers research tables with metadata
+from app.routes import auth, billing, offers, referrals, research
 
 
 @asynccontextmanager
@@ -30,6 +31,7 @@ app.include_router(auth.router)
 app.include_router(offers.router)
 app.include_router(referrals.router)
 app.include_router(billing.router)
+app.include_router(research.router)
 
 
 @app.get("/health")
