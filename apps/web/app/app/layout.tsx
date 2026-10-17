@@ -13,6 +13,8 @@ export default async function AppLayout({children}:{children:React.ReactNode}){
       <Link href="/app/analyze">Analyze offer</Link>
       <Link href="/app/referrals">Referrals</Link>
       <Link href="/app/billing">Billing</Link>
+      <div className="eyebrow" style={{margin:"18px 10px 8px"}}>Internal</div>
+      <Link href="/app/research">Research import</Link>
       <LogoutButton />
     </aside>
     <section className="main">{children}</section>
