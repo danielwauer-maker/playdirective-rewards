@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import LogoutButton from "./LogoutButton";
 
 export default async function AppLayout({children}:{children:React.ReactNode}){
   const store=await cookies();
@@ -12,6 +13,7 @@ export default async function AppLayout({children}:{children:React.ReactNode}){
       <Link href="/app/analyze">Analyze offer</Link>
       <Link href="/app/referrals">Referrals</Link>
       <Link href="/app/billing">Billing</Link>
+      <LogoutButton />
     </aside>
     <section className="main">{children}</section>
   </div>
