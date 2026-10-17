@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     referral_min_payment_cents: int = 499
 
     admin_email: str | None = None
+    research_upload_dir: str = "/data/research_uploads"
+    research_max_upload_mb: int = 12
 
 
 @lru_cache
