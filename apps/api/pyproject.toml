@@ -16,6 +16,7 @@ dependencies = [
   "httpx>=0.28,<1",
   "stripe>=11,<13",
   "email-validator>=2.2,<3",
+  "python-multipart>=0.0.20,<1",
 ]
 
 [project.optional-dependencies]
