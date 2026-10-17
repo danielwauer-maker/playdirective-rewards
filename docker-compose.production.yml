@@ -18,6 +18,10 @@ services:
     build: ./apps/api
     restart: unless-stopped
     env_file: .env
+    environment:
+      RESEARCH_UPLOAD_DIR: /data/research_uploads
+    volumes:
+      - research_uploads:/data/research_uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,3 +47,4 @@ services:
 
 volumes:
   postgres_data:
+  research_uploads:
