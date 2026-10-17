@@ -105,7 +105,7 @@ def _reward_referrer_if_qualified(session: SessionDep, referred_user: User, invo
     referral.status = "rewarded"
     referral.qualified_at = referral.qualified_at or datetime.now(UTC)
     referral.rewarded_at = datetime.now(UTC)
-    ledger = CreditLedgerEntry(
+    session.add(CreditLedgerEntry(
         user_id=referral.referrer_user_id,
         amount_cents=settings.referral_reward_cents,
         currency="EUR",
@@ -113,12 +113,12 @@ def _reward_referrer_if_qualified(session: SessionDep, referred_user: User, invo
         source_type="referral_invoice",
         source_id=invoice_id,
         description=f"Referral reward for user #{referred_user.id}",
-    )
-    session.add(ledger)
+    ))
 
     referrer_sub = session.scalar(select(Subscription).where(Subscription.user_id == referral.referrer_user_id))
     if referrer_sub and referrer_sub.stripe_customer_id and settings.stripe_secret_key:
         try:
+            stripe.api_key = settings.stripe_secret_key
             stripe.Customer.create_balance_transaction(
                 referrer_sub.stripe_customer_id,
                 amount=-settings.referral_reward_cents,
@@ -135,7 +135,7 @@ def _reward_referrer_if_qualified(session: SessionDep, referred_user: User, invo
                 description="Referral credit transferred to Stripe customer balance",
             ))
         except Exception:
-            # Keep the internal credit available even if Stripe balance transfer is temporarily unavailable.
+            # Preserve internal credit if the Stripe customer-balance transfer is unavailable.
             pass
 
 
@@ -144,6 +144,8 @@ async def stripe_webhook(request: Request, stripe_signature: str | None = Header
     settings = get_settings()
     if not settings.stripe_webhook_secret:
         raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
+    if settings.stripe_secret_key:
+        stripe.api_key = settings.stripe_secret_key
     payload = await request.body()
     try:
         event = stripe.Webhook.construct_event(payload, stripe_signature, settings.stripe_webhook_secret)
