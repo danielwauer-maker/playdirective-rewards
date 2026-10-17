@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from html import escape
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 
@@ -108,5 +108,11 @@ def me(user: UserDep, session: SessionDep):
 
 
 @router.post("/logout")
-def logout(user: UserDep):
+def logout(user: UserDep, session: SessionDep, authorization: str | None = Header(default=None)):
+    if authorization and authorization.lower().startswith("bearer "):
+        raw = authorization.split(" ", 1)[1].strip()
+        row = session.scalar(select(SessionRecord).where(SessionRecord.token_hash == hash_token(raw), SessionRecord.user_id == user.id))
+        if row and not row.revoked_at:
+            row.revoked_at = datetime.now(UTC)
+            session.commit()
     return {"status": "ok"}
