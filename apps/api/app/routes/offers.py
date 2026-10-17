@@ -1,14 +1,16 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.domain.scoring import analyze_milestones
-from app.models import Analysis, Milestone, Offer
+from app.models import Analysis, Milestone, Offer, Subscription
 from app.security import SessionDep, UserDep
 
 router = APIRouter(prefix="/v1/offers", tags=["offers"])
+FREE_MONTHLY_ANALYSES = 5
 
 
 class MilestoneInput(BaseModel):
@@ -73,8 +75,22 @@ def _serialize_offer(offer: Offer, milestones: list[Milestone], analysis: Analys
     }
 
 
+def _enforce_analysis_entitlement(user_id: int, session: SessionDep) -> None:
+    subscription = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+    if subscription and subscription.plan_id in {"pro", "max"} and subscription.status in {"active", "trialing"}:
+        return
+    now = datetime.now(UTC)
+    month_start = datetime(now.year, now.month, 1, tzinfo=UTC)
+    used = session.scalar(
+        select(func.count(Analysis.id)).where(Analysis.user_id == user_id, Analysis.created_at >= month_start)
+    ) or 0
+    if used >= FREE_MONTHLY_ANALYSES:
+        raise HTTPException(status_code=402, detail=f"Free plan includes {FREE_MONTHLY_ANALYSES} analyses per month. Upgrade to continue.")
+
+
 @router.post("")
 def create_offer(payload: OfferInput, user: UserDep, session: SessionDep):
+    _enforce_analysis_entitlement(user.id, session)
     offer = Offer(
         user_id=user.id,
         provider=payload.provider.strip().lower(),
