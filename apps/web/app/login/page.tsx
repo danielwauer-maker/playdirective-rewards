@@ -1,16 +1,20 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function LoginPage(){
-  const params=useSearchParams();
-  const ref=useMemo(()=>params.get("ref")||"",[params]);
-  const plan=useMemo(()=>params.get("plan")||"",[params]);
+  const [ref,setRef]=useState("");
+  const [plan,setPlan]=useState("");
   const [email,setEmail]=useState("");
   const [loading,setLoading]=useState(false);
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    setRef(params.get("ref")||"");
+    setPlan(params.get("plan")||"");
+  },[]);
 
   async function submit(e:FormEvent){
     e.preventDefault(); setLoading(true); setMessage(""); setError("");
